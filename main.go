@@ -107,14 +107,15 @@ func main() {
 	// 	SESSION_DIR:   path to session directory, if SESSION_FILE is not set
 
 	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:15672/")
 	for err != nil {
-		FailOnError(err, "Failed to connect to RabbitMQ")
-		fmt.Println("waiting 10 seconds")
+		log.Println("Failed to connect to RabbitMQ")
+		// FailOnError(err, "Failed to connect to RabbitMQ")
+		log.Println("waiting 10 seconds")
 		time.Sleep(time.Second * 10)
 		// conn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
 
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:15672/")
 	}
 	defer conn.Close()
 
