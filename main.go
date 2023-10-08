@@ -80,6 +80,19 @@ func FailOnError(err error, msg string) {
 	}
 }
 
+// CustomProgressTracker is a custom implementation of the Progress interface.
+type CustomProgressTracker struct {
+}
+
+// Chunk is the implementation of the Chunk method of the Progress interface.
+func (c *CustomProgressTracker) Chunk(ctx context.Context, state uploader.ProgressState) error {
+	// Implement your progress tracking logic here.
+	fmt.Printf("Upload Progress - ID: %d, Name: %s, Part: %d, PartSize: %d, Uploaded: %d, Total: %d\n",
+		state.ID, state.Name, state.Part, state.PartSize, state.Uploaded, state.Total)
+	// You can perform actions based on the progress state received.
+	return nil
+}
+
 type Message struct {
 	YoutubeURL string `json:"youtubeURL"`
 	UserID     int64  `json:"userID"`
@@ -96,9 +109,11 @@ func main() {
 	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	for err != nil {
-		// FailOnError(err, "Failed to connect to RabbitMQ")
+		FailOnError(err, "Failed to connect to RabbitMQ")
 		fmt.Println("waiting 10 seconds")
 		time.Sleep(time.Second * 10)
+		// conn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+
 		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	}
 	defer conn.Close()
@@ -139,8 +154,10 @@ func main() {
 			// Raw MTProto API client, allows making raw RPC calls.
 			api := tg.NewClient(client)
 
+			progress := CustomProgressTracker{}
+
 			// Helper for uploading. Automatically uses big file upload when needed.
-			uploader := uploader.NewUploader(api)
+			uploader := uploader.NewUploader(api).WithProgress(&progress).WithPartSize(524288)
 
 			// Helper for sending messages.
 			sender := message.NewSender(api)
@@ -166,6 +183,7 @@ func main() {
 					videoTitle := getVideoTitle(youtubeUrl)
 
 					fmt.Println("Uploading file to telegram...")
+
 					upload, err := uploader.FromBytes(ctx, videoTitle, audioBytes)
 					if err != nil {
 						fmt.Printf("upload error %v\n", err)
